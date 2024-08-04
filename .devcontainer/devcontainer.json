@@ -1,0 +1,24 @@
+{
+    "name": "ros-noetic-for-hydra",
+    "image": "blakerbuchanan/ros-noetic-for-hydra:0.0.1",
+    "runArgs": [
+      "--name", "ros-noetic-for-hydra",
+      "--privileged",
+      "--net=host",
+      "-v=/tmp/.X11-unix:/tmp/.X11-unix",
+      "--env=DISPLAY",
+      "--env=QT_X11_NO_MITSHM=1",
+      "-v=${localEnv:SSH_AUTH_SOCK}:/run/ssh-agent",
+      "--env=SSH_AUTH_SOCK=/run/ssh-agent"
+    ],
+  
+    "settings": {
+      "terminal.integrated.shell.linux": "/bin/bash"
+    },
+  
+    "remoteUser": "guest",
+
+    "mounts": [
+        "dst=/opt/ros_noetic_for_hydra_ws,type=volume,consistency=cached,src=ros-noetic-for-hydra"
+    ],
+  }
