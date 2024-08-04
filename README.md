@@ -25,6 +25,29 @@ You should now be able to run the docker image using
 ./docker_scripts/docker_run.sh
 ```
 
-
-
 ### Build and run the example
+Source the ROS setup. First navigate to the workspace directory.
+```bash
+cd /workspaces/ros-noetic-for-hydra
+```
+Then source noetic:
+```bash
+source /opt/ros/noetic/setup.bash
+```
+Initalize your catkin workspace and set build configs:
+```bash
+catkin init
+catkin config -DCMAKE_BUILD_TYPE=Release
+```
+You can now clone hydra, initialize the submodules, and install ros dependencies:
+```bash
+cd src
+git clone git@github.com:MIT-SPARK/Hydra.git hydra
+vcs import . < hydra/install/hydra.rosinstall
+rosdep install --from-paths . --ignore-src -r -y
+```
+Finally, build:
+```bash
+cd ..
+catkin build
+```
