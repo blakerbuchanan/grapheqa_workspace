@@ -1,7 +1,7 @@
 # Hydra in ROS Noetic
 This repo uses Docker to set up and run the implementation at this link: https://github.com/MIT-SPARK/Hydra/tree/main?tab=readme-ov-file
 
-Owners and collaborators of this repo are not claiming to have developed anything there, but soley for responsible for developing everything needed to use the implementation in Docker. Containerizing this seemed useful since the developers state that it is tested on ROS Noetic and Ubuntu 20.04.
+Owners and collaborators of this repo are not claiming to have developed anything there, but are soley (at the time of this commit, anyway) responsible for developing everything needed to use the implementation in Docker. Containerizing this seemed useful since the developers state that it is tested on ROS Noetic and Ubuntu 20.04.
 
 ### Prerequisites
 Install docker.
