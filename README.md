@@ -19,7 +19,7 @@ We now want to build the docker image. We could probably pull the docker image d
 ./docker_scripts/docker_build.sh
 ```
 
-You should now be able to run the docker image using
+Navigate to the `ros_hydra_in_docker` directory. You should now be able to run the docker image using
 
 ```bash
 ./docker_scripts/docker_run.sh
@@ -28,9 +28,11 @@ You should now be able to run the docker image using
 ### Build and run the example
 Within the same terminal instance in which the docker container is running, source the ROS setup. First navigate to the workspace directory in the docker container.
 ```bash
-cd /workspaces/ros-noetic-for-hydra
+cd /workspace
 ```
-Then source noetic:
+This workspace should contain the contents of the `ros_hydra_in_docker` directory.
+
+Source noetic:
 ```bash
 source /opt/ros/noetic/setup.bash
 ```
@@ -46,6 +48,8 @@ git clone git@github.com:MIT-SPARK/Hydra.git hydra
 vcs import . < hydra/install/hydra.rosinstall
 rosdep install --from-paths . --ignore-src -r -y
 ```
+During installation of ROS dependencies (the last command in the above list), it is possible the container will ask you for the password; it is "guest". You may also be prompted for other configuration, like keyboard layout. Just choose whatever you usually use.
+
 Finally, build:
 ```bash
 cd ..
