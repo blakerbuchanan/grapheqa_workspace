@@ -55,3 +55,5 @@ Finally, build:
 cd ..
 catkin build
 ```
+
+You can then follow the instructions given at https://github.com/MIT-SPARK/Hydra/tree/main?tab=readme-ov-file for running the node. This will require that you download a test data set and run it using rosbag run.
