@@ -46,6 +46,7 @@ You can now clone hydra, initialize the submodules, and install ros dependencies
 cd src
 git clone git@github.com:MIT-SPARK/Hydra.git hydra
 vcs import . < hydra/install/hydra.rosinstall
+rosdep update
 rosdep install --from-paths . --ignore-src -r -y
 ```
 During installation of ROS dependencies (the last command in the above list), it is possible the container will ask you for the password; it is "guest". You may also be prompted for other configuration, like keyboard layout. Just choose whatever you usually use.
