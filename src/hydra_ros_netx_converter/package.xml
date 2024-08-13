@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>hydra_ros_netx_converter</name>
+  <version>0.0.0</version>
+  <description>A simple ROS package with one Python node</description>
+
+  <maintainer email="you@example.com">Your Name</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>rospy</build_depend>
+  <exec_depend>rospy</exec_depend>
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <build_export_depend>message_generation</build_export_depend>
+  <build_export_depend>message_runtime</build_export_depend>
+
+  <depend>std_msgs</depend>
+  <depend>hydra_msgs</depend>
+  <depend>spark_dsg</depend>
+
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+  </export>
+</package>

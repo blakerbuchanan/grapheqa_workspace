@@ -24,7 +24,6 @@ docker run -it \
   -v $SSH_AUTH_SOCK_VAR:/run/ssh-agent \
   -e SSH_AUTH_SOCK=/run/ssh-agent \
   -v $WORKSPACE_DIR:/workspace:cached \
-  --mount type=volume,src=ros-noetic-for-hydra,dst=/opt/ros_noetic_for_hydra_ws,consistency=cached \
   --user guest \
   $DOCKER_IMAGE \
   /bin/bash

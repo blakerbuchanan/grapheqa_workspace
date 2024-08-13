@@ -22,6 +22,7 @@ docker_registry_image=blakerbuchanan/ros-noetic-for-hydra
 docker build \
        --no-cache \
        --build-arg TAG=${TAG} \
+       --build-arg SSH_PRIVATE_KEY="$(cat ~/.ssh/github-personal)" \
        --platform linux/amd64 \
        -t ${docker_registry_image}:${TAG} -f Dockerfile .
 

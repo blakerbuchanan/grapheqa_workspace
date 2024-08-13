@@ -49,3 +49,33 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # install behaviortreecpp dependencies
 RUN apt-get update && apt-get install --no-install-recommends -y \
     libzmq3-dev
+
+RUN mkdir /home/${ID_NAME}/catkin_ws
+
+RUN mkdir /home/${ID_NAME}/catkin_ws/src
+
+RUN cd /home/${ID_NAME}/catkin_ws
+
+# Source the ROS setup script and ensure it's applied in the same shell session
+RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+
+RUN catkin init && \
+    catkin config -DCMAKE_BUILD_TYPE=Release
+
+# RUN cd /home/${ID_NAME}/catkin_ws/src
+
+# # Create a known_hosts file
+# RUN mkdir -p /root/.ssh
+# RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
+
+# # Add the SSH key to the Docker image (use build argument for the SSH key)
+# ARG SSH_PRIVATE_KEY
+# RUN echo "$SSH_PRIVATE_KEY" > /root/.ssh/id_ed25519 && chmod 600 /root/.ssh/id_ed25519
+
+# RUN git clone git@github.com:MIT-SPARK/Hydra.git hydra
+
+# RUN vcs import . < hydra/install/hydra.rosinstall
+
+# RUN rosdep install --from-paths . --ignore-src -r -y
+
+# RUN cd /home/${ID_NAME}/catkin_ws
