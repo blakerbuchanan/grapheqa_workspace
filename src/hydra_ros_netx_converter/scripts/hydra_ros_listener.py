@@ -133,7 +133,7 @@ class HydraSceneGraphSubscriber:
     def __init__(self, topic, callback):
         """Construct a DSG Receiver."""
         self._callback = callback
-        topic = "/hydra_ros_node/frontend/dsg"
+        topic = "/hydra_ros_node/backend/dsg"
 
         # Not sure what the message types will be here
         self._sub = rospy.Subscriber(
