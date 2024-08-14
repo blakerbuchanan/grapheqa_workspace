@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>hydra_ros_netx_converter</name>
-  <version>0.0.0</version>
+  <version>0.0.1</version>
   <description>A simple ROS package with one Python node</description>
 
   <maintainer email="you@example.com">Your Name</maintainer>
@@ -10,6 +10,10 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>rospy</build_depend>
   <exec_depend>rospy</exec_depend>
+
+  <build_depend>python3</build_depend>
+  <exec_depend>python3</exec_depend>
+
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
   <build_export_depend>message_generation</build_export_depend>

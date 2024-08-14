@@ -62,6 +62,10 @@ RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 RUN catkin init && \
     catkin config -DCMAKE_BUILD_TYPE=Release
 
+# We need to do this to install the Python bindings for spark_dsg
+# cd src/spark_dsg
+# pip install -e .
+
 # RUN cd /home/${ID_NAME}/catkin_ws/src
 
 # # Create a known_hosts file
