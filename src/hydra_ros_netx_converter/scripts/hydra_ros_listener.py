@@ -38,12 +38,12 @@ import spark_dsg as dsg
 # Government is authorized to reproduce and distribute reprints for Government
 # purposes notwithstanding any copyright notation herein.
 #
-#
+
 """Conversion from spark_dsg to networkx."""
 import importlib
 import logging
 import json
-
+import numpy
 
 def _get_networkx():
     networkx = None
@@ -103,14 +103,28 @@ def layer_to_networkx(G_in):
     _fill_from_layer(G_out, G_in)
     return G_out
 
-# Tools to check if node is serializable
+# BEGIN TOOLS DEVELOPED FOR SEMNAV
+
+# Checkes if a value within a networkx graph is json-serializable
+# TODO(blake.buchanan): Currently everything not directly json serializable
+# is being ignored. Don't filter ndarrays, but convert them to lists and then
+# output them via json.dump().
 def is_json_serializable(value):
     try:
         json.dumps(value)
         return True
     except (TypeError, OverflowError):
+        # if isinstance(value, numpy.ndarray):
+        #     value = value.tolist()
+        #     try:
+        #         json.dumps(value)
+        #         return True
+        #     except:
+        #         return False
         return False
 
+# Filters a networkx graph to contain nodes only with attributes
+# which can be serialized when calling json.dump().
 def filter_serializable_graph(graph):
     import networkx as nx
     filtered_graph = nx.Graph()  # or nx.DiGraph() depending on your graph type
@@ -128,20 +142,26 @@ def filter_serializable_graph(graph):
     return filtered_graph
 
 class HydraSceneGraphSubscriber:
-    """Class for receiving a scene graph in python."""
+    """Class for receiving a scene graph from the Hydra package in python."""
 
     def __init__(self, topic, callback):
-        """Construct a DSG Receiver."""
+        """Construct a subscriber."""
         self._callback = callback
-        topic = "/hydra_ros_node/backend/dsg"
 
         # Not sure what the message types will be here
         self._sub = rospy.Subscriber(
-            topic, hydra_msgs.msg.DsgUpdate, self.handleUpdate
+            topic, hydra_msgs.msg.DsgUpdate, self._callback
         )
         rospy.loginfo(f"Created subscriber for topic {topic}")
 
-    def handleUpdate(self, msg):
+class HydraSceneGraphListenerNode:
+    """Node to handle listening for a scene graph, adding nodes to a NetworkX graph, and outputting the graph as a JSON file."""
+
+    def __init__(self, with_mesh=True):
+        """Start a listener node."""
+        self._sub = HydraSceneGraphSubscriber("/hydra_ros_node/backend/dsg", self.hydraSceneGraphCallback)
+
+    def hydraSceneGraphCallback(self, msg):
         rospy.loginfo("Got a dynamic scene graph message...")
         # This should get the binary data and convert it to type DynamicSceneGraph
         scene_graph = dsg.DynamicSceneGraph.from_binary(msg.layer_contents)
@@ -149,34 +169,20 @@ class HydraSceneGraphSubscriber:
         # Then use networkx.py to conver to networkx format
         netx_scene_graph = graph_to_networkx(scene_graph)
 
-        # Then conver to JSON using native networkx tools
+        # Then convert to JSON using native networkx tools
         # Convert the graph to a dictionary in JSON format
         import networkx as nx
         import json
 
-        #graph_data = nx.node_link_data(netx_scene_graph)
-
+        # All of the data in graph_data is not JSON-serializable,
+        # So we parse graph_data before writing to json
         filtered_graph = filter_serializable_graph(netx_scene_graph)
 
         graph_data = nx.node_link_data(filtered_graph)
 
-        # TODO(blake.buchanan): All of the data in graph_data is not JSON-serializable
-        # So we need to parse graph_data before writing to json
         # Write the JSON data to a file
         with open("graph.json", "w") as f:
             json.dump(graph_data, f, indent=4)
-
-class HydraSceneGraphListenerNode:
-    """Node to handle listening for a scene graph, adding nodes to a NetworkX graph, and outputting the graph as a JSON file."""
-
-    def __init__(self, with_mesh=True):
-        """Start a listener node."""
-        self._sub = HydraSceneGraphSubscriber("dsg_in", self.hydraSceneGraphCallback)
-
-    def hydraSceneGraphCallback(self, header, G):
-        rospy.loginfo(
-            f"Received graph with {G.num_nodes()} nodes @ {header.stamp.to_nsec()} [ns]"
-        )
 
     def spin(self):
         """Wait until rospy is shutdown."""

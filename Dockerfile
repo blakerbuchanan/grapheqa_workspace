@@ -46,25 +46,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-noetic-ros-base=1.5.0-1* \
     && rm -rf /var/lib/apt/lists/*
 
-# install behaviortreecpp dependencies
-RUN apt-get update && apt-get install --no-install-recommends -y \
-    libzmq3-dev
+# The idea behind the following code is to build Hydra as part of the Docker image
+# RUN mkdir /home/${ID_NAME}/catkin_ws
 
-RUN mkdir /home/${ID_NAME}/catkin_ws
+# RUN mkdir /home/${ID_NAME}/catkin_ws/src
 
-RUN mkdir /home/${ID_NAME}/catkin_ws/src
-
-RUN cd /home/${ID_NAME}/catkin_ws
+# RUN cd /home/${ID_NAME}/catkin_ws
 
 # Source the ROS setup script and ensure it's applied in the same shell session
-RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+# RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 
-RUN catkin init && \
+# RUN catkin init && \
     catkin config -DCMAKE_BUILD_TYPE=Release
 
 # We need to do this to install the Python bindings for spark_dsg
 # cd src/spark_dsg
 # pip install -e .
+# pip install networkx
 
 # RUN cd /home/${ID_NAME}/catkin_ws/src
 
