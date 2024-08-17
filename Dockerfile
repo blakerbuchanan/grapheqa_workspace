@@ -35,6 +35,26 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     python3-catkin-tools \
     git \
     openssh-client \
+    python3-pip \
+    libeigen3-dev \
+    libzmqpp-dev \
+    nlohmann-json3-dev \
+    libgoogle-glog-dev \
+    ros-noetic-tf2-eigen \
+    ros-noetic-interactive-markers \
+    ros-noetic-cv-bridge \
+    ros-noetic-image-transport \
+    ros-noetic-tf2-ros \
+    ros-noetic-image-proc \
+    ros-noetic-depth-image-proc \
+    ros-noetic-rviz \
+    qtbase5-dev \
+    libqt5core5a \
+    libqt5gui5 \
+    libqt5widgets5 \
+    ros-noetic-gtsam \
+    libopencv-dev \
+    libpcl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # bootstrap rosdep
@@ -46,6 +66,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-noetic-ros-base=1.5.0-1* \
     && rm -rf /var/lib/apt/lists/*
 
+RUN pip3 install --upgrade pip && \
+    pip3 install networkx
+
 # The idea behind the following code is to build Hydra as part of the Docker image
 # RUN mkdir /home/${ID_NAME}/catkin_ws
 
@@ -53,16 +76,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # RUN cd /home/${ID_NAME}/catkin_ws
 
-# Source the ROS setup script and ensure it's applied in the same shell session
+# # Source the ROS setup script and ensure it's applied in the same shell session
 # RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 
 # RUN catkin init && \
-    catkin config -DCMAKE_BUILD_TYPE=Release
-
-# We need to do this to install the Python bindings for spark_dsg
-# cd src/spark_dsg
-# pip install -e .
-# pip install networkx
+#     catkin config -DCMAKE_BUILD_TYPE=Release
 
 # RUN cd /home/${ID_NAME}/catkin_ws/src
 
@@ -78,6 +96,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # RUN vcs import . < hydra/install/hydra.rosinstall
 
-# RUN rosdep install --from-paths . --ignore-src -r -y
+# ENV DEBIAN_FRONTEND=${DEBIAN_FRONTEND}
+# RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+# RUN echo 'APT::Get::Assume-Yes "true";' > /etc/apt/apt.conf.d/90force-yes
+
+# USER $ID_NAME
+
+# RUN rosdep init && \
+#     rosdep update --rosdistro $ROS_DISTRO && \
+#     rosdep install --rosdistro $ROS_DISTRO --from-paths . --ignore-src -r -y --verbose
+
+# We need to do this to install the Python bindings for spark_dsg
+# cd src/spark_dsg
+# pip install -e .
+# pip install networkx
 
 # RUN cd /home/${ID_NAME}/catkin_ws

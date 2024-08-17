@@ -43,7 +43,7 @@ import spark_dsg as dsg
 import importlib
 import logging
 import json
-import numpy
+import numpy as np
 
 def _get_networkx():
     networkx = None
@@ -114,7 +114,8 @@ def is_json_serializable(value):
         json.dumps(value)
         return True
     except (TypeError, OverflowError):
-        # if isinstance(value, numpy.ndarray):
+        # print(type(value))
+        # if isinstance(value, np.ndarray):
         #     value = value.tolist()
         #     try:
         #         json.dumps(value)
@@ -131,12 +132,19 @@ def filter_serializable_graph(graph):
 
     # Add nodes with serializable data
     for node, data in graph.nodes(data=True):
-        serializable_data = {k: v for k, v in data.items() if is_json_serializable(v)}
+        #serializable_data = {k: v for k, v in data.items() if is_json_serializable(v)}
+        serializable_data = {k: (v.tolist() if isinstance(v, np.ndarray) else v)
+                                    for k, v in data.items()
+                                    if is_json_serializable(v.tolist() if isinstance(v, np.ndarray) else v)}
         filtered_graph.add_node(node, **serializable_data)
+
 
     # Add edges with serializable data
     for u, v, data in graph.edges(data=True):
-        serializable_data = {k: v for k, v in data.items() if is_json_serializable(v)}
+        #serializable_data = {k: v for k, v in data.items() if is_json_serializable(v)}
+        serializable_data = {k: (v.tolist() if isinstance(v, np.ndarray) else v)
+                                    for k, v in data.items()
+                                    if is_json_serializable(v.tolist() if isinstance(v, np.ndarray) else v)}
         filtered_graph.add_edge(u, v, **serializable_data)
 
     return filtered_graph
