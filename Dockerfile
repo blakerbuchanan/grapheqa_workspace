@@ -70,6 +70,7 @@ RUN pip3 install --upgrade pip && \
     pip3 install networkx
 
 # The idea behind the following code is to build Hydra as part of the Docker image
+# This doesn't currently work...
 # RUN mkdir /home/${ID_NAME}/catkin_ws
 
 # RUN mkdir /home/${ID_NAME}/catkin_ws/src

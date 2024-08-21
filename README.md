@@ -1,7 +1,11 @@
 # Hydra in ROS Noetic
-This repo uses Docker to set up and run the implementation at this link: https://github.com/MIT-SPARK/Hydra/tree/main?tab=readme-ov-file
+This repo does two things:
 
-Owners and collaborators of this repo are not claiming to have developed anything there, but are soley (at the time of this commit, anyway) responsible for developing everything needed to use the implementation in Docker. Containerizing this seemed useful since the developers state that it is tested on ROS Noetic and Ubuntu 20.04.
+1) It provides tools that use Docker to set up and run the implementation at this link: https://github.com/MIT-SPARK/Hydra/tree/main?tab=readme-ov-file
+
+Owners and collaborators of this repo are not claiming to have developed anything there, but are (at the time of this commit, anyway) responsible for developing everything needed to use the implementation in Docker. Containerizing this seemed useful since the developers state that it is tested on ROS Noetic and Ubuntu 20.04.
+
+2) Implements a basic custom listener node that listens for Hydra to publish a dynamic scene graph, of DynamicSceneGraph type defined within spark_dsg, and converts its contents into a JSON file using tools native to spark_dsg and networkx. The message published contains a serialized representation of the scene graph, requiring us to deserialize it upon receipt by the 'HydraSceneGraphListenerNode'. Since even the serialized scene graph contains data types custom to spark_dsg's DynamicSceneGraph type, we also need to filter out data types that are not JSON serializable through networkx's `node_link_data` function.
 
 ### Prerequisites
 Install docker.

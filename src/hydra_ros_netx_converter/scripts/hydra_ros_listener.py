@@ -109,19 +109,11 @@ def layer_to_networkx(G_in):
 # TODO(blake.buchanan): Currently everything not directly json serializable
 # is being ignored. Don't filter ndarrays, but convert them to lists and then
 # output them via json.dump().
-def is_json_serializable(value):
+def is_json_serializable(key, value):
     try:
         json.dumps(value)
         return True
     except (TypeError, OverflowError):
-        # print(type(value))
-        # if isinstance(value, np.ndarray):
-        #     value = value.tolist()
-        #     try:
-        #         json.dumps(value)
-        #         return True
-        #     except:
-        #         return False
         return False
 
 # Filters a networkx graph to contain nodes only with attributes
@@ -129,22 +121,24 @@ def is_json_serializable(value):
 def filter_serializable_graph(graph):
     import networkx as nx
     filtered_graph = nx.Graph()  # or nx.DiGraph() depending on your graph type
+    keys_to_filter = ["deformation_connections", "mesh_vertex_labels", "pcl_mesh_connections",
+                      "num_frontier_voxels", "NO_SEMANTIC_LABEL", "need_cleanup", "ellipse_centroid",
+                      "ellipse_matrix_compress", "ellipse_matrix_expand", "pcl_boundary_connections"]
 
     # Add nodes with serializable data
     for node, data in graph.nodes(data=True):
-        #serializable_data = {k: v for k, v in data.items() if is_json_serializable(v)}
         serializable_data = {k: (v.tolist() if isinstance(v, np.ndarray) else v)
                                     for k, v in data.items()
-                                    if is_json_serializable(v.tolist() if isinstance(v, np.ndarray) else v)}
+                                    if is_json_serializable(k, v.tolist() if isinstance(v, np.ndarray) else v)
+                                    and k not in keys_to_filter}
         filtered_graph.add_node(node, **serializable_data)
-
 
     # Add edges with serializable data
     for u, v, data in graph.edges(data=True):
-        #serializable_data = {k: v for k, v in data.items() if is_json_serializable(v)}
         serializable_data = {k: (v.tolist() if isinstance(v, np.ndarray) else v)
                                     for k, v in data.items()
-                                    if is_json_serializable(v.tolist() if isinstance(v, np.ndarray) else v)}
+                                    if is_json_serializable(k, v.tolist() if isinstance(v, np.ndarray) else v)
+                                    and k not in keys_to_filter}
         filtered_graph.add_edge(u, v, **serializable_data)
 
     return filtered_graph
