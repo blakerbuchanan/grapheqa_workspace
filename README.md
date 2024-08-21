@@ -1,4 +1,4 @@
-# Hydra in ROS Noetic
+# Hydra-ROS Dynamic Scene Graph to JSON Converter
 This repo does two things:
 
 1) It provides tools that use Docker to set up and run the implementation at this link: https://github.com/MIT-SPARK/Hydra/tree/main?tab=readme-ov-file
