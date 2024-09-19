@@ -17,7 +17,7 @@ We first want to configure a development environment in which we can build the d
 ./docker_scripts/create_environment_profile.sh
 ```
 
-We now want to build the docker image. We could probably pull the docker image down from my public repository on docker hub, but I haven't tested that so just build it locally for now.
+We now want to build the docker image. Before executing the following script, change the docker build argument within the script to correspond to the SSH key local to your system. This provides access such that submodules clone and initialize without issue. The build argument in question looks like `build-arg SSH_PRIVATE_KEY`. 
 
 ```bash
 ./docker_scripts/docker_build.sh

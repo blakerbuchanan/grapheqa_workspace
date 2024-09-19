@@ -23,6 +23,10 @@ RUN mkdir /home/${ID_NAME}/.ssh
 ###################################################################################################
 # Build the image as root from the / folder
 USER root
+
+# Copy bash config for theme (if you're using Bash)
+COPY .bashrc /root/.bashrc
+
 WORKDIR /
 
 # install bootstrap tools
@@ -51,10 +55,16 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     qtbase5-dev \
     libqt5core5a \
     libqt5gui5 \
-    libqt5widgets5 \
     ros-noetic-gtsam \
     libopencv-dev \
+    wget \
+    bzip2 \
+    ca-certificates \
+    curl \
     libpcl-dev \
+    libegl1 \
+    libopengl0 \
+    nvidia-driver-535 \
     && rm -rf /var/lib/apt/lists/*
 
 # bootstrap rosdep
@@ -68,6 +78,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip3 install --upgrade pip && \
     pip3 install networkx
+
+# Download and install Miniconda
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
+    bash /tmp/miniconda.sh -b -p /opt/miniconda && \
+    rm /tmp/miniconda.sh
+
+# Set environment variables
+ENV PATH=/opt/miniconda/bin:$PATH
 
 # The idea behind the following code is to build Hydra as part of the Docker image
 # This doesn't currently work...
