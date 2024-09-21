@@ -1,17 +1,125 @@
-# Hydra-ROS Dynamic Scene Graph to JSON Converter
-This repo does two things:
+# SemNav Project Workspace Configuration
+This repo does a few things:
 
-1) It provides tools that use Docker to set up and run the implementation at this link: https://github.com/MIT-SPARK/Hydra/tree/main?tab=readme-ov-file
+1) Provides instructions for how to set up a workspace on Ubuntu 20.04 to be able to run everything associated with our semantic navigation work. If you have a computer with a local Ubuntu 20.04 OS, you should start here. If you do not, see below.
 
-Owners and collaborators of this repo are not claiming to have developed anything there, but are (at the time of this commit, anyway) responsible for developing everything needed to use the implementation in Docker. Containerizing this seemed useful since the developers state that it is tested on ROS Noetic and Ubuntu 20.04.
+2) It provides tools that use Docker to set up and run the implementation at this link: https://github.com/blakerbuchanan/Hydra . This is a fork of the implementation at https://github.com/MIT-SPARK/Hydra, with modifications that support the "SemNav" project.
 
-2) Implements a basic custom listener node that listens for Hydra to publish a dynamic scene graph, of DynamicSceneGraph type defined within spark_dsg, and converts its contents into a JSON file using tools native to spark_dsg and networkx. The message published contains a serialized representation of the scene graph, requiring us to deserialize it upon receipt by the 'HydraSceneGraphListenerNode'. Since even the serialized scene graph contains data types custom to spark_dsg's DynamicSceneGraph type, we also need to filter out data types that are not JSON serializable through networkx's `node_link_data` function.
+Owners and collaborators of this repo are not claiming to have developed anything original to Hydra, but are (at the time of this commit, anyway) responsible for developing everything needed to use the implementation in Docker. Containerizing this seemed useful since the developers state that it is tested on ROS Noetic and Ubuntu 20.04.
 
+3) Implements a basic custom listener node that listens for Hydra to publish a dynamic scene graph, of DynamicSceneGraph type defined within spark_dsg, and converts its contents into a JSON file using tools native to spark_dsg and networkx. The message published contains a serialized representation of the scene graph, requiring us to deserialize it upon receipt by the 'HydraSceneGraphListenerNode'. Since even the serialized scene graph contains data types custom to spark_dsg's DynamicSceneGraph type, we also need to filter out data types that are not JSON serializable through networkx's `node_link_data` function.
+
+## Setting up your workspace on Ubuntu 20.04
+This set of instructions is only for local Ubuntu 20.04 installations. Please refer to the Docker setup section of this README if you are on any other Ubuntu OS version.
+
+0) If you don't have ROS Noetic, install it: https://wiki.ros.org/ROS/Installation
+
+1) Then do:
+
+``` bash
+sudo apt install python3-rosdep python3-catkin-tools python3-vcstool
+```
+
+Set up rosdep:
+
+``` bash
+sudo rosdep init
+rosdep update
+```
+
+Clone this repo:
+
+``` bash
+git clone git@github.com:blakerbuchanan/semnav_workspace.git
+```
+
+Then `cd` into it:
+
+``` bash
+cd semnav_workspace
+```
+
+Install our Fork of Hydra. This will also install forks of Spark-DSG and Hydra-ROS via the branches specified in our modified `hydra.rosinstall`.
+
+``` bash
+source /opt/ros/noetic/setup.bash
+catkin init
+catkin config -DCMAKE_BUILD_TYPE=Release
+
+cd src
+git clone git@github.com:blakerbuchanan/Hydra.git
+vcs import . < hydra/install/hydra.rosinstall
+rosdep install --from-paths . --ignore-src -r -y
+
+cd ..
+catkin build
+```
+
+At this point we can make sure Hydra is installed correctly by just trying to run it.
+
+``` bash
+source devel/setup.bash
+roslaunch hydra_ros uhumans2.launch
+```
+
+An RViz window should open. If nothing crashes, you are probably good.
+
+To test further, download the uhumans2 dataset at https://drive.usercontent.google.com/download?id=1CA_1Awu-bewJKpDrILzWok_H_6cOkGDb&authuser=0 .
+
+Then do:
+
+``` bash
+rosbag play path/to/rosbag --clock
+```
+
+You should see the scene graph, mesh, etc., begin populating in the RViz window that opened.
+
+2) Install the Hydra Python bindings
+
+If you do not have conda, go ahead and install it. Then create a conda environment:
+
+``` bash
+conda create -n "hydra_semnav" python=3.8`
+```
+
+Activate the workspace:
+
+``` bash
+conda activate hydra_semnav
+```
+
+Now we will install editable versions of the Spark-DSG and Hydra Python bindings within the conda environment:
+
+``` bash
+# required to expose DSG python bindings
+pip install -e "src/spark_dsg[viz]"
+pip install -r python/build_requirements.txt
+pip install -e .
+```
+
+3) Install Habitat via conda: https://github.com/facebookresearch/habitat-sim#installation
+
+4) We need a few other things:
+
+``` bash
+pip install rerun-sdk
+pip install opencv
+pip install openai
+```
+
+The OpenAI API requires an API key. Add the following line to your .bashrc:
+
+`export OPENAI_API_KEY=<YOUR_OPENAI_KEY>`
+
+## Docker setup (don't worry about this right now, under construction)
 ### Prerequisites
 Install docker.
 
 ### Configure development environment
-We first want to configure a development environment in which we can build the docker image. This will also create a docker volume that will mount to the workspace. After cloning this repo, navigate to `ros_hydra_in_docker`. To create the environment profile, do
+You can try two different approaches to get set up in Docker. If you run into issues, submit a PR with the issues and we will go from there. The first approach is to build the docker container locally, set everything up from within that container, and commit the resulting image using `docker commit` so that it is set up and you don't have to reinstall anything. This will involve working through some NVIDIA driver issues, which I (Blake) don't understand as well as I would like.
+
+#### Set up the Docker image locally
+We first want to configure a development environment in which we can build the docker image. This will also create a docker volume that will mount to the workspace. After cloning this repo, navigate to `semnav_workspace`. To create the environment profile, do
 
 ```bash
 ./docker_scripts/create_environment_profile.sh
@@ -23,7 +131,7 @@ We now want to build the docker image. Before executing the following script, ch
 ./docker_scripts/docker_build.sh
 ```
 
-Navigate to the `ros_hydra_in_docker` directory. You should now be able to run the docker image using
+Navigate to the `semnav_workspace` directory. You should now be able to run the docker image using
 
 ```bash
 ./docker_scripts/docker_run.sh
@@ -36,49 +144,30 @@ docker exec -it ros-noetic-for-hydra bash
 ```
 
 
-### Build and run the example
+##### Build and run the example
 Within the same terminal instance in which the docker container is running, source the ROS setup. First navigate to the workspace directory in the docker container.
 ```bash
 cd /workspace
 ```
-This workspace should contain the contents of the `ros_hydra_in_docker` directory.
+This workspace should contain the contents of the `semnav_workspace` directory.
 
-Source noetic:
-```bash
-source /opt/ros/noetic/setup.bash
-```
-Initalize your catkin workspace and set build configs:
-```bash
-catkin init
-catkin config -DCMAKE_BUILD_TYPE=Release
-```
-You can now clone hydra, initialize the submodules, and install ros dependencies:
-```bash
-cd src
-git clone git@github.com:MIT-SPARK/Hydra.git hydra
-vcs import . < hydra/install/hydra.rosinstall
-rosdep update
-rosdep install --from-paths . --ignore-src -r -y
-```
+You can then follow the same instructions as given above for setting up a local workspace.
 
-Next, we will need to install the python bindings for spark_dsg so we can use tools for handling objects of the DynamicSceneGraph type.
+You will then want to run:
 
 ``` bash
-cd spark_dsg
-pip install -e .
+docker commit [container-id] [new-image-name]
 ```
 
-During installation of ROS dependencies (the last command in the above list), it is possible the container will ask you for the password; it is "guest". You may also be prompted for other configuration, like keyboard layout. Just choose whatever you usually use.
+You can get the container ID by running:
 
-Finally, build:
-```bash
-cd ..
-catkin build
+``` bash
+docker container ls
 ```
 
-You can then follow the instructions given at https://github.com/MIT-SPARK/Hydra/tree/main?tab=readme-ov-file for running the node. This will require that you download a test data set and run it using rosbag run.
+Grab the ID associated with the running instance of ros-noetic-for-hydra and run the docker commit command, providing `blakerbuchanan/ros-noetic-for-hydra-with-bindings:0.0.1` for the `[new-image-name]` argument. This will overwrite the current image such that when you execute `docker_run.sh` the image from which a container is instantiated corresponds to the new, locally commited image. Docker shouldn't allow you to push that image up to DockerHub, but in case it does, just don't push it; this would overwrite the baseline image we use for this.
 
-### Running Hydra with the hydra_ros_netx_converter node
+##### Running Hydra with the hydra_ros_netx_converter node
 This section will discuss running Hydra along with the hydra_ros_netx_converter node. The latter of these nodes listens to messages containing the current dynamic scene graph, deserializes the already serialized representation of the scene graph, converts it to networkx format, filters it so that all nodes and edges have attributes which are JSON-serializable, and then writes that output to a JSON file. 
 
 You will need three terminal instances to run everything for this example; one for hydra itself, another for playing bag bag data, and another for running the hydra_ros_netx_converter node. To open up another running instance of the docker container, open up another terminal instance and do:
