@@ -47,7 +47,7 @@ catkin init
 catkin config -DCMAKE_BUILD_TYPE=Release
 
 cd src
-git clone git@github.com:blakerbuchanan/Hydra.git
+git clone git@github.com:blakerbuchanan/Hydra.git hydra
 vcs import . < hydra/install/hydra.rosinstall
 rosdep install --from-paths . --ignore-src -r -y
 
@@ -79,7 +79,7 @@ You should see the scene graph, mesh, etc., begin populating in the RViz window 
 If you do not have conda, go ahead and install it. Then create a conda environment:
 
 ``` bash
-conda create -n "hydra_semnav" python=3.8`
+conda create -n "hydra_semnav" python=3.9`
 ```
 
 Activate the workspace:
@@ -93,6 +93,7 @@ Now we will install editable versions of the Spark-DSG and Hydra Python bindings
 ``` bash
 # required to expose DSG python bindings
 pip install -e "src/spark_dsg[viz]"
+cd src/hydra
 pip install -r python/build_requirements.txt
 pip install -e .
 ```
@@ -102,14 +103,20 @@ pip install -e .
 4) We need a few other things:
 
 ``` bash
-pip install rerun-sdk
-pip install opencv
-pip install openai
+pip install rerun-sdk opencv-python openai omegaconf ipdb torch torchvision transformers scikit-image yacs
+pip install -q -U google-generativeai
 ```
 
 The OpenAI API requires an API key. Add the following line to your .bashrc:
 
 `export OPENAI_API_KEY=<YOUR_OPENAI_KEY>`
+
+Google's Gemini will also need an API key, call it GOOGLE_API_KEY:
+
+`export GOOGLE_API_KEY=<YOUR_GOOGLE_KEY>`
+
+## Developing and contributing to SemNav
+Most of our development so far has been within the `hydra` package itself. Our `main` branch is called `hm3d`.
 
 ## Docker setup (don't worry about this right now, under construction)
 ### Prerequisites
