@@ -4,6 +4,8 @@ import rospy
 from std_msgs.msg import String
 import hydra_msgs.msg
 import spark_dsg as dsg
+from sensor_msgs.msg import Image
+from semantic_inference_msgs.msg import FeatureImage
 
 # Copyright 2022, Massachusetts Institute of Technology.
 # All Rights Reserved
@@ -156,13 +158,17 @@ class HydraSceneGraphSubscriber:
         )
         rospy.loginfo(f"Created subscriber for topic {topic}")
 
-class HydraSceneGraphListenerNode:
+class VLMPlannerNode:
     """Node to handle listening for a scene graph, adding nodes to a NetworkX graph, and outputting the graph as a JSON file."""
 
     def __init__(self, with_mesh=True):
         """Start a listener node."""
-        self._sub = HydraSceneGraphSubscriber("/hydra_ros_node/backend/dsg", self.hydraSceneGraphCallback)
-
+        self._scene_graph_sub = HydraSceneGraphSubscriber("/hydra_ros_node/backend/dsg", self.hydraSceneGraphCallback)
+        self._semantic_image_sub = rospy.Subscriber("/camera/semantic/image_raw_test", FeatureImage, self.semanticImageCallback)
+        # TODO(blake) Need a way to get the state of the Stretch. vlm_planner.get_next_action() will need to consider Stretch
+        self._semantic_image_pub = rospy.Publisher("/camera/semantic/image_raw", Image, queue_size=10)
+    
+    
     def hydraSceneGraphCallback(self, msg):
         rospy.loginfo("Got a dynamic scene graph message...")
         # This should get the binary data and convert it to type DynamicSceneGraph
@@ -186,6 +192,12 @@ class HydraSceneGraphListenerNode:
         with open("graph.json", "w") as f:
             json.dump(graph_data, f, indent=4)
 
+    def semanticImageCallback(self, semantic_msg):
+        rospy.loginfo("Got a semantic image...")
+        output_msg = semantic_msg.image
+        self._semantic_image_pub.publish(output_msg)
+        rospy.loginfo("Publishing converged image to Hydra...")
+
     def spin(self):
         """Wait until rospy is shutdown."""
         rospy.spin()
@@ -195,7 +207,7 @@ def main():
     """Start ROS and the node."""
     rospy.init_node("hydra_scene_graph_listener")
 
-    node = HydraSceneGraphListenerNode()
+    node = VLMPlannerNode()
 
     node.spin()
 

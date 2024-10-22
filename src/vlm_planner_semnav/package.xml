@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>hydra_ros_netx_converter</name>
+  <name>vlm_planner_semnav</name>
   <version>0.0.1</version>
   <description>A simple ROS package with one Python node</description>
 
@@ -22,6 +22,8 @@
   <depend>std_msgs</depend>
   <depend>hydra_msgs</depend>
   <depend>spark_dsg</depend>
+  <depend>sensor_msgs</depend>
+  <depend>semantic_inference_msgs</depend>
 
   <export>
     <!-- Other tools can request additional information be placed here -->

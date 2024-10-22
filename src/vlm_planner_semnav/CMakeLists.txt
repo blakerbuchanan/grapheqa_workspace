@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(hydra_ros_netx_converter)
+project(vlm_planner_semnav)
 
 find_package(spark_dsg REQUIRED)
 
@@ -10,6 +10,8 @@ find_package(catkin REQUIRED COMPONENTS
   hydra_msgs
   message_generation
   spark_dsg
+  sensor_msgs
+  semantic_inference_msgs
 )
 
 
@@ -20,6 +22,8 @@ catkin_package(
   std_msgs
   hydra_msgs
   spark_dsg
+  sensor_msgs
+  semantic_inference_msgs
 )
 
 catkin_python_setup()
@@ -32,6 +36,6 @@ include_directories(
 
 ## Install Python scripts
 catkin_install_python(PROGRAMS
-  scripts/hydra_ros_listener.py
+  scripts/vlm_planner_eqa_ros.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

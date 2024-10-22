@@ -103,7 +103,7 @@ pip install -e .
 4) We need a few other things:
 
 ``` bash
-pip install rerun-sdk opencv-python openai omegaconf ipdb torch torchvision transformers scikit-image yacs
+pip install rerun-sdk opencv-python openai omegaconf ipdb torch torchvision transformers scikit-image yacs gpustat
 pip install -q -U google-generativeai
 ```
 
