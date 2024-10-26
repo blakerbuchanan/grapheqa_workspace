@@ -6,6 +6,8 @@ import hydra_msgs.msg
 import spark_dsg as dsg
 from sensor_msgs.msg import Image
 from semantic_inference_msgs.msg import FeatureImage
+from cv_bridge import CvBridge
+import numpy as np
 
 # Copyright 2022, Massachusetts Institute of Technology.
 # All Rights Reserved
@@ -164,10 +166,18 @@ class VLMPlannerNode:
     def __init__(self, with_mesh=True):
         """Start a listener node."""
         self._scene_graph_sub = HydraSceneGraphSubscriber("/hydra_ros_node/backend/dsg", self.hydraSceneGraphCallback)
-        self._semantic_image_sub = rospy.Subscriber("/camera/semantic/image_raw_test", FeatureImage, self.semanticImageCallback)
-        # TODO(blake) Need a way to get the state of the Stretch. vlm_planner.get_next_action() will need to consider Stretch
-        self._semantic_image_pub = rospy.Publisher("/camera/semantic/image_raw", Image, queue_size=10)
-    
+
+        self._semantic_image_sub = rospy.Subscriber("/camera/color/image_raw2", Image, self.semanticImageCallback)
+        rospy.loginfo(f"Created subscriber for topic /camera/color/image_raw")
+
+        self._semantic_image_pub = rospy.Publisher("/camera/semantic/image_raw2", Image, queue_size=10)
+        rospy.loginfo(f"Created publisher for topic /camera/semantic/image_raw")
+
+        self._depth_image_sub = rospy.Subscriber("/camera/depth/image_raw", Image, self.depthCallback)
+        rospy.loginfo(f"Created subscriber for topic /camera/depth/image_raw")
+
+        self._depth_image_pub = rospy.Publisher("/camera/depth/image_raw_corrected", Image, queue_size=10)
+        
     
     def hydraSceneGraphCallback(self, msg):
         rospy.loginfo("Got a dynamic scene graph message...")
@@ -193,10 +203,22 @@ class VLMPlannerNode:
             json.dump(graph_data, f, indent=4)
 
     def semanticImageCallback(self, semantic_msg):
-        rospy.loginfo("Got a semantic image...")
-        output_msg = semantic_msg.image
+        output_msg = semantic_msg
         self._semantic_image_pub.publish(output_msg)
-        rospy.loginfo("Publishing converged image to Hydra...")
+
+    def depthCallback(self, msg):
+        bridge = CvBridge()
+        
+        # Convert the ROS Image message from 16UC1 to an OpenCV image (16-bit)
+        depth_image_mm = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+        
+        # Convert from millimeters to meters by dividing by 1000.0
+        depth_image_m = depth_image_mm.astype(np.float32) / 1000.0
+
+        # Convert back to a ROS Image message in 32FC1 format
+        depth_image_msg_m = bridge.cv2_to_imgmsg(depth_image_m, encoding="32FC1")
+        
+        self._depth_image_pub.publish(depth_image_msg_m)
 
     def spin(self):
         """Wait until rospy is shutdown."""
