@@ -1,12 +1,13 @@
 #!/bin/bash
 
 # Name of the Docker container
-CONTAINER_NAME="ros-noetic-for-hydra"
+CONTAINER_NAME="grapheqa-for-stretch"
 
 # Docker image to use
-DOCKER_IMAGE="blakerbuchanan/ros-noetic-for-hydra-with-bindings:0.0.1"
+DOCKER_IMAGE="blakerbuchanan/grapheqa_for_stretch:0.0.1"
 
 # Path to the workspace directory
+# You should be in the grapheqa_ws directory
 WORKSPACE_DIR="$(pwd)"
 
 # Environment variables

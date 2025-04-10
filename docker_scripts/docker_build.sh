@@ -17,12 +17,10 @@ while getopts "u" o; do
     esac
 done
 
-docker_registry_image=blakerbuchanan/ros-noetic-for-hydra
+docker_registry_image=blakerbuchanan/grapheqa_for_stretch
 
 docker build \
-       --no-cache \
        --build-arg TAG=${TAG} \
-       --build-arg SSH_PRIVATE_KEY="$(cat ~/.ssh/github-personal)" \
        --platform linux/amd64 \
        -t ${docker_registry_image}:${TAG} -f Dockerfile .
 

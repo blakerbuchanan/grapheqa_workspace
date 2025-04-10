@@ -1,133 +1,173 @@
-ARG TAG=0.0.1
-ARG DEBIAN_FRONTEND=noninteractive
+# Use Ubuntu 20.04 as the base image
+FROM nvidia/cuda:12.4.0-devel-ubuntu20.04
 
-# This is an auto generated Dockerfile for ros:ros-base
-# generated from docker_images/create_ros_image.Dockerfile.em
-FROM ros:noetic-ros-core-focal
+# Set environment variables to avoid interactive prompts during package installations
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
-###################################################################################################
-# Set up guest user  and tools for development
-ARG DEV_GROUP_ID=8888
-ARG ID_NAME=guest
-ENV ID_NAME=${ID_NAME}
-# Create default users
-RUN groupadd -g ${DEV_GROUP_ID} developers \
-    && useradd -ms /bin/bash $ID_NAME \
-    && usermod -aG sudo $ID_NAME \
-    && usermod -aG developers $ID_NAME \
-    && echo "${ID_NAME}:${ID_NAME}" | chpasswd
-USER $ID_NAME
-WORKDIR /home/${ID_NAME}
-RUN mkdir /home/${ID_NAME}/.ssh
+SHELL ["/bin/bash", "-c"]
 
-###################################################################################################
-# Build the image as root from the / folder
+# Update and install essential dependencies
+RUN apt-get update && apt-get install -y \
+    locales \
+    curl \
+    gnupg2 \
+    lsb-release \
+    git \
+    build-essential \
+    libpcl-dev \
+    libboost-all-dev \
+    libeigen3-dev \
+    python3-dev \
+    && locale-gen en_US.UTF-8 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add ROS Noetic repository
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - && \
+    sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+
+# Install ROS Noetic Desktop Full
+RUN apt-get update && apt-get install -y \
+    ros-noetic-desktop-full ros-noetic-gtsam \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN sh \
+    -c 'echo "deb http://packages.ros.org/ros/ubuntu `lsb_release -sc` main" \
+        > /etc/apt/sources.list.d/ros-latest.list'
+
+RUN apt-get update && apt-get install wget
+
+RUN wget http://packages.ros.org/ros.key -O - | apt-key add -
+
+RUN apt install -y python3-rosdep python3-catkin-tools python3-vcstool
+
+# Initialize rosdep
+RUN rosdep init && rosdep update
+
 USER root
 
-# Copy bash config for theme (if you're using Bash)
-COPY .bashrc /root/.bashrc
+# Source ROS setup file automatically
+RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 
-WORKDIR /
+RUN mkdir -p catkin_ws/src \
+    && cd catkin_ws \
+	&& catkin init \
+	&& catkin config -DCMAKE_BUILD_TYPE=Release \
+	&& cd src \
+	&& git clone -b grapheqa https://github.com/blakerbuchanan/Hydra ./hydra \
+	&& sed -i -E 's|git@github\.com:(.*)\.git|https://github.com/\1.git|g' hydra/install/hydra.rosinstall \
+	&& vcs import . < hydra/install/hydra.rosinstall
 
-# install bootstrap tools
-RUN apt-get update && apt-get install --no-install-recommends -y \
-    build-essential \
-    python3-rosdep \
-    python3-rosinstall \
-    python3-vcstools \
-    python3-vcstool \
-    python3-catkin-tools \
-    git \
-    openssh-client \
+WORKDIR /catkin_ws
+
+RUN source /opt/ros/noetic/setup.bash && cd src && rosdep install --from-paths . --ignore-src -r -y --rosdistro=noetic
+RUN source /opt/ros/noetic/setup.bash && catkin build
+
+WORKDIR /root
+
+# Install python
+RUN apt-get update && apt-get install -y \
+    python3 \
     python3-pip \
-    libeigen3-dev \
-    libzmqpp-dev \
-    nlohmann-json3-dev \
-    libgoogle-glog-dev \
-    ros-noetic-tf2-eigen \
-    ros-noetic-interactive-markers \
-    ros-noetic-cv-bridge \
-    ros-noetic-image-transport \
-    ros-noetic-tf2-ros \
-    ros-noetic-image-proc \
-    ros-noetic-depth-image-proc \
-    ros-noetic-rviz \
-    qtbase5-dev \
-    libqt5core5a \
-    libqt5gui5 \
-    ros-noetic-gtsam \
-    libopencv-dev \
-    wget \
-    bzip2 \
-    ca-certificates \
-    curl \
-    libpcl-dev \
-    libegl1 \
-    libopengl0 \
-    nvidia-driver-535 \
+    python-is-python3 \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# bootstrap rosdep
-RUN rosdep init && \
-  rosdep update --rosdistro $ROS_DISTRO
+# Install Mamba
+RUN curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+RUN bash Miniforge3-$(uname)-$(uname -m).sh -b
+# Add mamba to the path
+ENV PATH /root/miniforge3/bin:$PATH
+RUN mamba create -n "grapheqa" python=3.10 -y \
+    && mamba init
 
-# install ros packages
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ros-noetic-ros-base=1.5.0-1* \
+WORKDIR /catkin_ws
+RUN source activate grapheqa \
+    && source /opt/ros/noetic/setup.bash \
+    && export CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5" \
+    && pip install "src/spark_dsg[viz]"
+
+WORKDIR /catkin_ws/src/hydra
+
+RUN source /catkin_ws/devel/setup.bash \
+    && source activate grapheqa \
+    && export CMAKE_FLAGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5" \
+    && pip install setuptools==69.5.1 \
+    && pip install -r python/build_requirements.txt \
+    && source ../../devel/setup.bash \
+    && source activate grapheqa \
+    && export CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5" \
+    && pip install -e .
+
+RUN source activate grapheqa \
+    && git clone https://github.com/SaumyaSaxena/graph_eqa.git \
+    && cd graph_eqa \
+    && pip install sentencepiece \
+    && pip install -e . \
+    && pip install numpy-quaternion
+
+# Stretch AI Pyaudio
+RUN apt-get update && apt-get install -y \
+    libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 espeak ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --upgrade pip && \
-    pip3 install networkx
+RUN source activate grapheqa \
+    && git clone https://github.com/hello-robot/stretch_ai --branch hello-peiqi/grapheqa \
+    && cd stretch_ai \
+    && pip install -e ./src[dev] \
+    && git submodule update --init --recursive \
+    && cd third_party/detectron2 \
+    && pip install -e . \
+    && cd ../../src/stretch/perception/detection/detic/Detic \
+    && git submodule update --init --recursive \
+    && pip install -r requirements.txt \
+    && mkdir -p models \
+    && wget --no-check-certificate https://dl.fbaipublicfiles.com/detic/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth -O models/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth
 
-# Download and install Miniconda
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
-    bash /tmp/miniconda.sh -b -p /opt/miniconda && \
-    rm /tmp/miniconda.sh
+# For debugging purpose
+RUN apt-get update && apt-get install -y vim iputils-ping && rm -rf /var/lib/apt/lists/*
 
-# Set environment variables
-ENV PATH=/opt/miniconda/bin:$PATH
+RUN echo "source /catkin_ws/devel/setup.bash" >> ~/.bashrc
 
-# The idea behind the following code is to build Hydra as part of the Docker image
-# This doesn't currently work...
-# RUN mkdir /home/${ID_NAME}/catkin_ws
+# Install habitat
+# RUN apt-get update \
+#     && apt-get install -y --no-install-recommends \
+#     libjpeg-dev libglm-dev libgl1-mesa-glx \
+#     libegl1-mesa-dev mesa-utils xorg-dev freeglut3-dev \
+#     && rm -rf /var/lib/apt/lists/*
 
-# RUN mkdir /home/${ID_NAME}/catkin_ws/src
+# WORKDIR /root
 
-# RUN cd /home/${ID_NAME}/catkin_ws
+# RUN wget https://developer.download.nvidia.com/compute/cuda/12.6.3/local_installers/cuda_12.6.3_560.35.05_linux.run
 
-# # Source the ROS setup script and ensure it's applied in the same shell session
-# RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+# RUN sh cuda_12.6.3_560.35.05_linux.run
 
-# RUN catkin init && \
-#     catkin config -DCMAKE_BUILD_TYPE=Release
+# RUN source activate grapheqa && mamba install -y -c conda-forge cudatoolkit=11.8 cudnn=8.1.0
 
-# RUN cd /home/${ID_NAME}/catkin_ws/src
+# RUN source activate grapheqa \
+#     && git clone --branch stable https://github.com/facebookresearch/habitat-sim.git
 
-# # Create a known_hosts file
-# RUN mkdir -p /root/.ssh
-# RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
+# WORKDIR /root/habitat-sim
 
-# # Add the SSH key to the Docker image (use build argument for the SSH key)
-# ARG SSH_PRIVATE_KEY
-# RUN echo "$SSH_PRIVATE_KEY" > /root/.ssh/id_ed25519 && chmod 600 /root/.ssh/id_ed25519
+# RUN source activate grapheqa && pip install cmake
 
-# RUN git clone git@github.com:MIT-SPARK/Hydra.git hydra
+# RUN export CUDA_HOME=/usr/local/cuda \
+#     && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64 \
+#     && export PATH=$PATH:$CUDA_HOME/bin
 
-# RUN vcs import . < hydra/install/hydra.rosinstall
+#RUN source activate grapheqa && python setup.py install --headless --with-cuda --bullet
+    # pip install git+https://github.com/facebookresearch/habitat-sim.git
 
-# ENV DEBIAN_FRONTEND=${DEBIAN_FRONTEND}
-# RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
-# RUN echo 'APT::Get::Assume-Yes "true";' > /etc/apt/apt.conf.d/90force-yes
+WORKDIR /root/graph_eqa
+# RUN wget https://github.com/SaumyaSaxena/explore-eqa_semnav/blob/master/data/questions.csv
+# RUN wget https://github.com/SaumyaSaxena/explore-eqa_semnav/blob/master/data/scene_init_poses.csv
 
-# USER $ID_NAME
+RUN source activate grapheqa && python -c "from transformers import AutoModel ; model = AutoModel.from_pretrained('google/siglip-so400m-patch14-384')"
 
-# RUN rosdep init && \
-#     rosdep update --rosdistro $ROS_DISTRO && \
-#     rosdep install --rosdistro $ROS_DISTRO --from-paths . --ignore-src -r -y --verbose
+# RUN git pull origin main
 
-# We need to do this to install the Python bindings for spark_dsg
-# cd src/spark_dsg
-# pip install -e .
-# pip install networkx
-
-# RUN cd /home/${ID_NAME}/catkin_ws
+# Default command: Launch bash
+CMD ["bash"]
