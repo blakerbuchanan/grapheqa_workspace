@@ -29,6 +29,6 @@ docker run -it \
   -e SSH_AUTH_SOCK=/run/ssh-agent \
   -v $WORKSPACE_DIR:/workspace:cached \
    --runtime nvidia \
-  --user guest \
+   --rm \
   $DOCKER_IMAGE \
   /bin/bash

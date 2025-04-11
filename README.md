@@ -1,144 +1,21 @@
-# SemNav Project Workspace Configuration
-This repo does a few things:
-
-1) Provides instructions for how to set up a workspace on Ubuntu 20.04 to be able to run everything associated with our semantic navigation work. If you have a computer with a local Ubuntu 20.04 OS, you should start here. If you do not, see below.
-
-2) It provides tools that use Docker to set up and run the implementation at this link: https://github.com/blakerbuchanan/Hydra . This is a fork of the implementation at https://github.com/MIT-SPARK/Hydra, with modifications that support the "SemNav" project.
+# GraphEQA Project Workspace Configuration
+This repo provides tools that use Docker to set up and run the implementation at this link: https://github.com/blakerbuchanan/Hydra . This is a fork of the implementation at https://github.com/MIT-SPARK/Hydra, with modifications that support the "GraphEQA" project.
 
 Owners and collaborators of this repo are not claiming to have developed anything original to Hydra, but are (at the time of this commit, anyway) responsible for developing everything needed to use the implementation in Docker. Containerizing this seemed useful since the developers state that it is tested on ROS Noetic and Ubuntu 20.04.
 
-3) Implements a basic custom listener node that listens for Hydra to publish a dynamic scene graph, of DynamicSceneGraph type defined within spark_dsg, and converts its contents into a JSON file using tools native to spark_dsg and networkx. The message published contains a serialized representation of the scene graph, requiring us to deserialize it upon receipt by the 'HydraSceneGraphListenerNode'. Since even the serialized scene graph contains data types custom to spark_dsg's DynamicSceneGraph type, we also need to filter out data types that are not JSON serializable through networkx's `node_link_data` function.
-
-## Setting up your workspace on Ubuntu 20.04
-This set of instructions is only for local Ubuntu 20.04 installations. Please refer to the Docker setup section of this README if you are on any other Ubuntu OS version.
-
-0) If you don't have ROS Noetic, install it: https://wiki.ros.org/ROS/Installation
-
-1) Then do:
-
-``` bash
-sudo apt install python3-rosdep python3-catkin-tools python3-vcstool
-```
-
-Set up rosdep:
-
-``` bash
-sudo rosdep init
-rosdep update
-```
-
-Clone this repo:
-
-``` bash
-git clone git@github.com:blakerbuchanan/semnav_workspace.git
-```
-
-Then `cd` into it:
-
-``` bash
-cd semnav_workspace
-```
-
-Install our Fork of Hydra. This will also install forks of Spark-DSG and Hydra-ROS via the branches specified in our modified `hydra.rosinstall`.
-
-``` bash
-source /opt/ros/noetic/setup.bash
-catkin init
-catkin config -DCMAKE_BUILD_TYPE=Release
-
-cd src
-git clone git@github.com:blakerbuchanan/Hydra.git hydra
-vcs import . < hydra/install/hydra.rosinstall
-rosdep install --from-paths . --ignore-src -r -y
-
-cd ..
-catkin build
-```
-
-At this point we can make sure Hydra is installed correctly by just trying to run it.
-
-``` bash
-source devel/setup.bash
-roslaunch hydra_ros uhumans2.launch
-```
-
-An RViz window should open. If nothing crashes, you are probably good.
-
-To test further, download the uhumans2 dataset at https://drive.usercontent.google.com/download?id=1CA_1Awu-bewJKpDrILzWok_H_6cOkGDb&authuser=0 .
-
-Then do:
-
-``` bash
-rosbag play path/to/rosbag --clock
-```
-
-You should see the scene graph, mesh, etc., begin populating in the RViz window that opened.
-
-2) Install the Hydra Python bindings
-
-If you do not have conda, go ahead and install it. Then create a conda environment:
-
-``` bash
-conda create -n "hydra_semnav" python=3.9`
-```
-
-Activate the workspace:
-
-``` bash
-conda activate hydra_semnav
-```
-
-Now we will install editable versions of the Spark-DSG and Hydra Python bindings within the conda environment:
-
-``` bash
-# required to expose DSG python bindings
-pip install -e "src/spark_dsg[viz]"
-cd src/hydra
-pip install -r python/build_requirements.txt
-pip install -e .
-```
-
-3) Install Habitat via conda: https://github.com/facebookresearch/habitat-sim#installation
-
-4) We need a few other things:
-
-``` bash
-pip install rerun-sdk opencv-python openai omegaconf ipdb torch torchvision transformers scikit-image yacs gpustat
-pip install -q -U google-generativeai
-```
-
-The OpenAI API requires an API key. Add the following line to your .bashrc:
-
-`export OPENAI_API_KEY=<YOUR_OPENAI_KEY>`
-
-Google's Gemini will also need an API key, call it GOOGLE_API_KEY:
-
-`export GOOGLE_API_KEY=<YOUR_GOOGLE_KEY>`
-
-## Developing and contributing to SemNav
-Most of our development so far has been within the `hydra` package itself. Our `main` branch is called `hm3d`.
-
-## Docker setup (don't worry about this right now, under construction)
+## Docker setup
 ### Prerequisites
 Install docker.
 
 ### Configure development environment
-You can try two different approaches to get set up in Docker. If you run into issues, submit a PR with the issues and we will go from there. The first approach is to build the docker container locally, set everything up from within that container, and commit the resulting image using `docker commit` so that it is set up and you don't have to reinstall anything. This will involve working through some NVIDIA driver issues, which I (Blake) don't understand as well as I would like.
-
 #### Set up the Docker image locally
-We first want to configure a development environment in which we can build the docker image. This will also create a docker volume that will mount to the workspace. After cloning this repo, navigate to `semnav_workspace`. To create the environment profile, do
-
-```bash
-./docker_scripts/create_environment_profile.sh
-```
-
-We now want to build the docker image. Before executing the following script, change the docker build argument within the script to correspond to the SSH key local to your system. This provides access such that submodules clone and initialize without issue. The build argument in question looks like `build-arg SSH_PRIVATE_KEY`. 
+Run the following script to build the docker image locally.
 
 ```bash
 ./docker_scripts/docker_build.sh
 ```
 
-Navigate to the `semnav_workspace` directory. You should now be able to run the docker image using
+The following script will run a container 
 
 ```bash
 ./docker_scripts/docker_run.sh
@@ -147,68 +24,8 @@ Navigate to the `semnav_workspace` directory. You should now be able to run the 
 If the docker container is already running and you want to execute the container in another terminal instance, do:
 
 ``` bash
-docker exec -it ros-noetic-for-hydra bash
+docker exec -it grapheqa-for-stretch bash
 ```
-
 
 ##### Build and run the example
-Within the same terminal instance in which the docker container is running, source the ROS setup. First navigate to the workspace directory in the docker container.
-```bash
-cd /workspace
-```
-This workspace should contain the contents of the `semnav_workspace` directory.
-
-You can then follow the same instructions as given above for setting up a local workspace.
-
-You will then want to run:
-
-``` bash
-docker commit [container-id] [new-image-name]
-```
-
-You can get the container ID by running:
-
-``` bash
-docker container ls
-```
-
-Grab the ID associated with the running instance of ros-noetic-for-hydra and run the docker commit command, providing `blakerbuchanan/ros-noetic-for-hydra-with-bindings:0.0.1` for the `[new-image-name]` argument. This will overwrite the current image such that when you execute `docker_run.sh` the image from which a container is instantiated corresponds to the new, locally commited image. Docker shouldn't allow you to push that image up to DockerHub, but in case it does, just don't push it; this would overwrite the baseline image we use for this.
-
-##### Running Hydra with the hydra_ros_netx_converter node
-This section will discuss running Hydra along with the hydra_ros_netx_converter node. The latter of these nodes listens to messages containing the current dynamic scene graph, deserializes the already serialized representation of the scene graph, converts it to networkx format, filters it so that all nodes and edges have attributes which are JSON-serializable, and then writes that output to a JSON file. 
-
-You will need three terminal instances to run everything for this example; one for hydra itself, another for playing bag bag data, and another for running the hydra_ros_netx_converter node. To open up another running instance of the docker container, open up another terminal instance and do:
-
-``` bash
-docker exec -it ros-noetic-for-hydra bash 
-```
-
-Make sure you have built all packages in the workspace, navigate to `/workspace`, and source your workspace:
-
-``` bash
-cd /workspace
-source devel/setup.bash
-```
-
-You will want three terminal instances open, all three running inside the docker container. In one of them, run hydra with the uhumans2 launch file:
-
-``` bash
-roslaunch hydra_ros uhumans2.launch
-```
-
-In another terminal, run the hydra_ros_netx_converter node:
-
-``` bash
-cd /workspace
-source devel/setup.bash
-rosrun hydra_ros_netx_converter hydra_ros_listener.py
-```
-
-In the final terminal, run whatever bag data you want. The following assumes the uhmans2 office dataset, available here: https://web.mit.edu/sparklab/datasets/uHumans2/ and located in a directory called `data` within `/workspace`.
-
-``` bash
-cd /workspace
-source devel/setup.bash
-rosbag play data/uHumans2_office_s1_00h.bag
-```
-
+TODO
